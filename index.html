@@ -211,6 +211,11 @@
         <option value="1000">1000m</option>
         <option value="1609.34" selected>1 mile</option>
         <option value="5000">5k</option>
+        <optgroup label="Saved Paces">
+          <option value="saved-mile">Mile pace</option>
+          <option value="saved-5k">5K pace</option>
+          <option value="saved-threshold">Threshold</option>
+        </optgroup>
       </select>
     </div>
     <div class="quick-paces">
@@ -397,7 +402,20 @@
 
     minutesInput.addEventListener('input', calculate);
     secondsInput.addEventListener('input', calculate);
-    paceDistanceSelect.addEventListener('change', calculate);
+    paceDistanceSelect.addEventListener('change', () => {
+      const value = paceDistanceSelect.value;
+      if (value.startsWith('saved-')) {
+        const key = value.replace('saved-', '');
+        if (savedPaces[key]) {
+          loadPace(key);
+        } else {
+          // No saved pace, reset to 1 mile
+          paceDistanceSelect.value = '1609.34';
+        }
+      } else {
+        calculate();
+      }
+    });
     customDistanceInput.addEventListener('input', () => {
       const minutes = parseInt(minutesInput.value) || 0;
       const seconds = parseInt(secondsInput.value) || 0;
