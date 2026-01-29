@@ -111,18 +111,38 @@
     input[type="number"] {
       -moz-appearance: textfield;
     }
+    select {
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      color: #1e293b;
+    }
+    select:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
   </style>
 </head>
 <body>
   <h1>Pace Calculator</h1>
 
   <div class="input-section">
-    <label>Pace per mile</label>
+    <label>Pace</label>
     <div class="pace-input">
       <input type="number" id="minutes" min="0" max="59" placeholder="0" inputmode="numeric">
       <span>:</span>
       <input type="number" id="seconds" min="0" max="59" placeholder="00" inputmode="numeric">
-      <span>/ mile</span>
+      <span>/</span>
+      <select id="pace-distance">
+        <option value="200">200m</option>
+        <option value="400">400m</option>
+        <option value="800">800m</option>
+        <option value="1000">1000m</option>
+        <option value="1609.34" selected>1 mile</option>
+        <option value="5000">5k</option>
+      </select>
     </div>
   </div>
 
@@ -173,6 +193,7 @@
 
     const minutesInput = document.getElementById('minutes');
     const secondsInput = document.getElementById('seconds');
+    const paceDistanceSelect = document.getElementById('pace-distance');
     const mphDisplay = document.getElementById('mph');
     const customDistanceInput = document.getElementById('custom-distance');
     const customSplitDisplay = document.getElementById('custom-split');
@@ -181,6 +202,7 @@
       const minutes = parseInt(minutesInput.value) || 0;
       const seconds = parseInt(secondsInput.value) || 0;
       const totalSeconds = minutes * 60 + seconds;
+      const paceDistance = parseFloat(paceDistanceSelect.value);
 
       if (totalSeconds === 0) {
         mphDisplay.textContent = '0.0';
@@ -191,13 +213,15 @@
         return;
       }
 
-      // Calculate mph
-      const mph = 60 / (totalSeconds / 60);
+      // Calculate seconds per meter based on selected pace distance
+      const secondsPerMeter = totalSeconds / paceDistance;
+
+      // Calculate mph (miles per hour)
+      const secondsPerMile = secondsPerMeter * METERS_PER_MILE;
+      const mph = 3600 / secondsPerMile;
       mphDisplay.textContent = mph.toFixed(1);
 
       // Calculate splits for each distance
-      const secondsPerMeter = totalSeconds / METERS_PER_MILE;
-
       distances.forEach(distance => {
         const splitSeconds = secondsPerMeter * distance;
         const splitMins = Math.floor(splitSeconds / 60);
@@ -224,12 +248,14 @@
 
     minutesInput.addEventListener('input', calculate);
     secondsInput.addEventListener('input', calculate);
+    paceDistanceSelect.addEventListener('change', calculate);
     customDistanceInput.addEventListener('input', () => {
       const minutes = parseInt(minutesInput.value) || 0;
       const seconds = parseInt(secondsInput.value) || 0;
       const totalSeconds = minutes * 60 + seconds;
+      const paceDistance = parseFloat(paceDistanceSelect.value);
       if (totalSeconds > 0) {
-        const secondsPerMeter = totalSeconds / METERS_PER_MILE;
+        const secondsPerMeter = totalSeconds / paceDistance;
         calculateCustom(secondsPerMeter);
       }
     });
