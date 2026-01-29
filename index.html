@@ -123,6 +123,75 @@
       outline: none;
       border-color: #2563eb;
     }
+    .quick-paces {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .pace-btn {
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .pace-btn:active {
+      background: #e2e8f0;
+    }
+    .pace-btn.has-pace {
+      border-color: #2563eb;
+      color: #2563eb;
+      background: #eff6ff;
+    }
+    .saved-paces {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    .saved-paces h3 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      color: #475569;
+    }
+    .saved-pace-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .saved-pace-row:last-child {
+      border-bottom: none;
+    }
+    .saved-pace-label {
+      font-weight: 600;
+      width: 80px;
+    }
+    .saved-pace-value {
+      color: #2563eb;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .save-btn {
+      margin-left: auto;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+    .save-btn:active {
+      background: #1d4ed8;
+    }
   </style>
 </head>
 <body>
@@ -143,6 +212,11 @@
         <option value="1609.34" selected>1 mile</option>
         <option value="5000">5k</option>
       </select>
+    </div>
+    <div class="quick-paces">
+      <button class="pace-btn" id="btn-mile" data-key="mile">Mile</button>
+      <button class="pace-btn" id="btn-5k" data-key="5k">5K</button>
+      <button class="pace-btn" id="btn-threshold" data-key="threshold">Threshold</button>
     </div>
   </div>
 
@@ -175,6 +249,10 @@
         <td class="distance">1000m</td>
         <td class="time" id="split-1000">--:--</td>
       </tr>
+      <tr>
+        <td class="distance">1 mile</td>
+        <td class="time" id="split-1609">--:--</td>
+      </tr>
     </tbody>
   </table>
 
@@ -187,9 +265,28 @@
     </div>
   </div>
 
+  <div class="saved-paces">
+    <h3>Saved Paces</h3>
+    <div class="saved-pace-row">
+      <span class="saved-pace-label">Mile</span>
+      <span class="saved-pace-value" id="saved-mile">--:-- / mile</span>
+      <button class="save-btn" data-key="mile">Save Current</button>
+    </div>
+    <div class="saved-pace-row">
+      <span class="saved-pace-label">5K</span>
+      <span class="saved-pace-value" id="saved-5k">--:-- / mile</span>
+      <button class="save-btn" data-key="5k">Save Current</button>
+    </div>
+    <div class="saved-pace-row">
+      <span class="saved-pace-label">Threshold</span>
+      <span class="saved-pace-value" id="saved-threshold">--:-- / mile</span>
+      <button class="save-btn" data-key="threshold">Save Current</button>
+    </div>
+  </div>
+
   <script>
     const METERS_PER_MILE = 1609.34;
-    const distances = [200, 400, 800, 1000];
+    const distances = [200, 400, 800, 1000, 1609];
 
     const minutesInput = document.getElementById('minutes');
     const secondsInput = document.getElementById('seconds');
@@ -197,6 +294,29 @@
     const mphDisplay = document.getElementById('mph');
     const customDistanceInput = document.getElementById('custom-distance');
     const customSplitDisplay = document.getElementById('custom-split');
+
+    // Load saved paces from localStorage
+    const savedPaces = JSON.parse(localStorage.getItem('savedPaces')) || {};
+
+    function formatPace(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = Math.round(totalSeconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateSavedPaceDisplay() {
+      ['mile', '5k', 'threshold'].forEach(key => {
+        const display = document.getElementById(`saved-${key}`);
+        const btn = document.getElementById(`btn-${key}`);
+        if (savedPaces[key]) {
+          display.textContent = `${formatPace(savedPaces[key].seconds)} / mile`;
+          btn.classList.add('has-pace');
+        } else {
+          display.textContent = '--:-- / mile';
+          btn.classList.remove('has-pace');
+        }
+      });
+    }
 
     function calculate() {
       const minutes = parseInt(minutesInput.value) || 0;
@@ -246,6 +366,35 @@
       customSplitDisplay.textContent = `${splitMins}:${splitSecs.toString().padStart(2, '0')}`;
     }
 
+    function getCurrentPacePerMile() {
+      const minutes = parseInt(minutesInput.value) || 0;
+      const seconds = parseInt(secondsInput.value) || 0;
+      const totalSeconds = minutes * 60 + seconds;
+      const paceDistance = parseFloat(paceDistanceSelect.value);
+      if (totalSeconds === 0) return null;
+      const secondsPerMeter = totalSeconds / paceDistance;
+      return secondsPerMeter * METERS_PER_MILE;
+    }
+
+    function savePace(key) {
+      const secondsPerMile = getCurrentPacePerMile();
+      if (secondsPerMile) {
+        savedPaces[key] = { seconds: secondsPerMile };
+        localStorage.setItem('savedPaces', JSON.stringify(savedPaces));
+        updateSavedPaceDisplay();
+      }
+    }
+
+    function loadPace(key) {
+      if (savedPaces[key]) {
+        const totalSeconds = savedPaces[key].seconds;
+        minutesInput.value = Math.floor(totalSeconds / 60);
+        secondsInput.value = Math.round(totalSeconds % 60);
+        paceDistanceSelect.value = '1609.34'; // Set to 1 mile
+        calculate();
+      }
+    }
+
     minutesInput.addEventListener('input', calculate);
     secondsInput.addEventListener('input', calculate);
     paceDistanceSelect.addEventListener('change', calculate);
@@ -259,6 +408,19 @@
         calculateCustom(secondsPerMeter);
       }
     });
+
+    // Save buttons
+    document.querySelectorAll('.save-btn').forEach(btn => {
+      btn.addEventListener('click', () => savePace(btn.dataset.key));
+    });
+
+    // Quick load buttons
+    document.querySelectorAll('.pace-btn').forEach(btn => {
+      btn.addEventListener('click', () => loadPace(btn.dataset.key));
+    });
+
+    // Initialize saved paces display
+    updateSavedPaceDisplay();
 
     // Register service worker for offline support
     if ('serviceWorker' in navigator) {
