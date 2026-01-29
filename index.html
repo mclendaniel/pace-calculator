@@ -198,25 +198,12 @@
   <h1>Pace Calculator</h1>
 
   <div class="input-section">
-    <label>Pace</label>
+    <label>Pace per mile</label>
     <div class="pace-input">
       <input type="number" id="minutes" min="0" max="59" placeholder="0" inputmode="numeric">
       <span>:</span>
       <input type="number" id="seconds" min="0" max="59" placeholder="00" inputmode="numeric">
-      <span>/</span>
-      <select id="pace-distance">
-        <option value="200">200m</option>
-        <option value="400">400m</option>
-        <option value="800">800m</option>
-        <option value="1000">1000m</option>
-        <option value="1609.34" selected>1 mile</option>
-        <option value="5000">5k</option>
-        <optgroup label="Saved Paces">
-          <option value="saved-mile">Mile pace</option>
-          <option value="saved-5k">5K pace</option>
-          <option value="saved-threshold">Threshold</option>
-        </optgroup>
-      </select>
+      <span>/ mile</span>
     </div>
     <div class="quick-paces">
       <button class="pace-btn" id="btn-mile" data-key="mile">Mile</button>
@@ -295,7 +282,6 @@
 
     const minutesInput = document.getElementById('minutes');
     const secondsInput = document.getElementById('seconds');
-    const paceDistanceSelect = document.getElementById('pace-distance');
     const mphDisplay = document.getElementById('mph');
     const customDistanceInput = document.getElementById('custom-distance');
     const customSplitDisplay = document.getElementById('custom-split');
@@ -327,7 +313,6 @@
       const minutes = parseInt(minutesInput.value) || 0;
       const seconds = parseInt(secondsInput.value) || 0;
       const totalSeconds = minutes * 60 + seconds;
-      const paceDistance = parseFloat(paceDistanceSelect.value);
 
       if (totalSeconds === 0) {
         mphDisplay.textContent = '0.0';
@@ -338,12 +323,11 @@
         return;
       }
 
-      // Calculate seconds per meter based on selected pace distance
-      const secondsPerMeter = totalSeconds / paceDistance;
+      // Calculate seconds per meter (pace is always per mile)
+      const secondsPerMeter = totalSeconds / METERS_PER_MILE;
 
       // Calculate mph (miles per hour)
-      const secondsPerMile = secondsPerMeter * METERS_PER_MILE;
-      const mph = 3600 / secondsPerMile;
+      const mph = 60 / (totalSeconds / 60);
       mphDisplay.textContent = mph.toFixed(1);
 
       // Calculate splits for each distance
@@ -375,10 +359,8 @@
       const minutes = parseInt(minutesInput.value) || 0;
       const seconds = parseInt(secondsInput.value) || 0;
       const totalSeconds = minutes * 60 + seconds;
-      const paceDistance = parseFloat(paceDistanceSelect.value);
       if (totalSeconds === 0) return null;
-      const secondsPerMeter = totalSeconds / paceDistance;
-      return secondsPerMeter * METERS_PER_MILE;
+      return totalSeconds;
     }
 
     function savePace(key) {
@@ -395,34 +377,18 @@
         const totalSeconds = savedPaces[key].seconds;
         minutesInput.value = Math.floor(totalSeconds / 60);
         secondsInput.value = Math.round(totalSeconds % 60);
-        paceDistanceSelect.value = '1609.34'; // Set to 1 mile
         calculate();
       }
     }
 
     minutesInput.addEventListener('input', calculate);
     secondsInput.addEventListener('input', calculate);
-    paceDistanceSelect.addEventListener('change', () => {
-      const value = paceDistanceSelect.value;
-      if (value.startsWith('saved-')) {
-        const key = value.replace('saved-', '');
-        if (savedPaces[key]) {
-          loadPace(key);
-        } else {
-          // No saved pace, reset to 1 mile
-          paceDistanceSelect.value = '1609.34';
-        }
-      } else {
-        calculate();
-      }
-    });
     customDistanceInput.addEventListener('input', () => {
       const minutes = parseInt(minutesInput.value) || 0;
       const seconds = parseInt(secondsInput.value) || 0;
       const totalSeconds = minutes * 60 + seconds;
-      const paceDistance = parseFloat(paceDistanceSelect.value);
       if (totalSeconds > 0) {
-        const secondsPerMeter = totalSeconds / paceDistance;
+        const secondsPerMeter = totalSeconds / METERS_PER_MILE;
         calculateCustom(secondsPerMeter);
       }
     });
