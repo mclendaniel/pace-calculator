@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pace Calculator</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    h1 {
+      text-align: center;
+      color: #2563eb;
+      margin-bottom: 24px;
+    }
+    .input-section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .pace-input {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 16px;
+      font-size: 24px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      text-align: center;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    .pace-input span {
+      font-size: 18px;
+      color: #64748b;
+    }
+    .treadmill-speed {
+      background: #2563eb;
+      color: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .treadmill-speed .label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .treadmill-speed .speed {
+      font-size: 32px;
+      font-weight: 700;
+    }
+    table {
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 16px;
+      text-align: left;
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #475569;
+    }
+    td {
+      border-top: 1px solid #e2e8f0;
+    }
+    .distance {
+      font-weight: 600;
+    }
+    .time {
+      font-variant-numeric: tabular-nums;
+      color: #2563eb;
+      font-weight: 600;
+    }
+    /* Remove spinner buttons on number inputs */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pace Calculator</h1>
+
+  <div class="input-section">
+    <label>Pace per mile</label>
+    <div class="pace-input">
+      <input type="number" id="minutes" min="0" max="59" placeholder="0" inputmode="numeric">
+      <span>:</span>
+      <input type="number" id="seconds" min="0" max="59" placeholder="00" inputmode="numeric">
+      <span>/ mile</span>
+    </div>
+  </div>
+
+  <div class="treadmill-speed">
+    <div class="label">Treadmill Speed</div>
+    <div class="speed"><span id="mph">0.0</span> mph</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Distance</th>
+        <th>Split Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="distance">200m</td>
+        <td class="time" id="split-200">--:--</td>
+      </tr>
+      <tr>
+        <td class="distance">400m</td>
+        <td class="time" id="split-400">--:--</td>
+      </tr>
+      <tr>
+        <td class="distance">800m</td>
+        <td class="time" id="split-800">--:--</td>
+      </tr>
+      <tr>
+        <td class="distance">1000m</td>
+        <td class="time" id="split-1000">--:--</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <script>
+    const METERS_PER_MILE = 1609.34;
+    const distances = [200, 400, 800, 1000];
+
+    const minutesInput = document.getElementById('minutes');
+    const secondsInput = document.getElementById('seconds');
+    const mphDisplay = document.getElementById('mph');
+
+    function calculate() {
+      const minutes = parseInt(minutesInput.value) || 0;
+      const seconds = parseInt(secondsInput.value) || 0;
+      const totalSeconds = minutes * 60 + seconds;
+
+      if (totalSeconds === 0) {
+        mphDisplay.textContent = '0.0';
+        distances.forEach(d => {
+          document.getElementById(`split-${d}`).textContent = '--:--';
+        });
+        return;
+      }
+
+      // Calculate mph
+      const mph = 60 / (totalSeconds / 60);
+      mphDisplay.textContent = mph.toFixed(1);
+
+      // Calculate splits for each distance
+      const secondsPerMeter = totalSeconds / METERS_PER_MILE;
+
+      distances.forEach(distance => {
+        const splitSeconds = secondsPerMeter * distance;
+        const splitMins = Math.floor(splitSeconds / 60);
+        const splitSecs = Math.round(splitSeconds % 60);
+        document.getElementById(`split-${distance}`).textContent =
+          `${splitMins}:${splitSecs.toString().padStart(2, '0')}`;
+      });
+    }
+
+    minutesInput.addEventListener('input', calculate);
+    secondsInput.addEventListener('input', calculate);
+
+    // Register service worker for offline support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+</html>
